@@ -20,6 +20,11 @@
         cursor: pointer;
     }
 
+    nav {
+        position: sticky;
+        top: 0;
+    }
+
     #posts {
         display: grid;
         gap: 1rem;
@@ -51,7 +56,9 @@
         </ol>
     </main>
     <main id="postsview" hidden>
-        <button onclick="on_goto_usersview_press();">Back</button>
+        <nav>
+            <button onclick="on_goto_usersview_press();">Back</button>
+        </nav>
         <h2 id="username"></h2>
         <div id="posts"></div>
     </main>
