@@ -83,22 +83,33 @@
     const $userslist = $("userslist")
     const $postsview = $("postsview")
 
+    let usersview_scrollpos = 0
+
     const init_usersview = async () => {
         $usersview.hidden = false
         $userslist.innerHTML = ""
         const response = await fetch("/users", { method: "POST" })
         /**@type{string[]} */
         const data = await response.json()
-        data.forEach(async userid => {
+        let userid2$li = {}
+        // 時間のかからない処理
+        data.forEach(userid => {
             const $li = $ce("li")
             $li.innerText = userid
             $li.addEventListener("click", () => {
+                usersview_scrollpos = window.scrollY
                 $usersview.hidden = true
                 init_postsview(userid)
             })
             $userslist.append($li)
+            userid2$li[userid] = $li
+        })
+        // スクロール位置の復元
+        window.scrollTo(0, usersview_scrollpos)
+        // 時間のかかる処理
+        data.forEach(async userid => {
             const user = await fetch(`/${userid}`, { method: "POST" }).then(value => value.json())
-            $li.innerText = `${user.profile.name}@${userid}`
+            userid2$li[userid].innerText = `${user.profile.name}@${userid}`
         })
     }
 
