@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "XPostInfoSaver",
+    "version": "1.0",
+    "description": "Download X post information as JSON file.",
+    "permissions": [
+        "downloads",
+        "scripting"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://x.com/*/status/*"
+            ],
+            "js": [
+                "common.js"
+            ],
+            "css":[
+                "style.css"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,147 @@
+<html lang="ja">
+
+<style>
+    li {
+        padding-top: 1rem;
+        cursor: pointer;
+    }
+
+    section {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        overflow: hidden;
+        gap: 0.5rem;
+    }
+
+    img {
+        width: 100%;
+        object-fit: contain;
+        cursor: pointer;
+    }
+
+    #posts {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    @media (max-width:768px) {
+        #posts {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width:480px) {
+        #posts {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalBird</title>
+</head>
+
+<body>
+    <main id="usersview">
+        <ol id="userslist">
+        </ol>
+    </main>
+    <main id="postsview" hidden>
+        <button onclick="on_goto_usersview_press();">Back</button>
+        <h2 id="username"></h2>
+        <div id="posts"></div>
+    </main>
+</body>
+
+<script defer>
+    /**
+     * @returns{HTMLElement}
+     */
+    const $ = (id) => document.getElementById(id)
+    /**
+     * @returns{HTMLElement}
+     */
+    const $ce = (tagName) => document.createElement(tagName)
+    const create_$p = (text) => {
+        const $p = $ce("p")
+        $p.innerText = text
+        return $p
+    }
+
+    const $usersview = $("usersview")
+    const $userslist = $("userslist")
+    const $postsview = $("postsview")
+
+    const init_usersview = async () => {
+        $usersview.hidden = false
+        $userslist.innerHTML = ""
+        const response = await fetch("/users", { method: "POST" })
+        /**@type{string[]} */
+        const data = await response.json()
+        data.forEach(async userid => {
+            const $li = $ce("li")
+            $li.innerText = userid
+            $li.addEventListener("click", () => {
+                $usersview.hidden = true
+                init_postsview(userid)
+            })
+            $userslist.append($li)
+            const user = await fetch(`/${userid}`, { method: "POST" }).then(value => value.json())
+            $li.innerText = `${user.profile.name}@${userid}`
+        })
+    }
+
+    const init_postsview = async (userid) => {
+        $postsview.hidden = false
+        const user_response = await fetch(`/${userid}`, { method: "POST" })
+        const user = await user_response.json()
+        $("username").innerText = user.profile.name
+        $("posts").innerHTML = ""
+        const posts = user["posts"]
+        const postids = Object.keys(posts)
+        const n_posts = postids.length
+        for (const postid of postids) {
+            const item = posts[postid]
+            const $post = $ce("section")
+            $("posts").append($post)
+            init_post($post, userid, item)
+        }
+    }
+    const init_post = async ($post, userid, item) => {
+        $post.append(create_$p(item.text))
+        const n_medias = item["medias"].length
+        for (let i = 0; i < n_medias; i++) {
+            const $img = $ce("img")
+            $post.append($img)
+            init_img($img, userid, item.id, i)
+        }
+    }
+    /**
+     * @param {HTMLElement} $img
+     */
+    const init_img = ($img, userid, postid, mediaidx) => {
+        const url = `/${userid}/${postid}/${mediaidx}`
+        fetch(url, { method: "POST" })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob)
+                $img.src = url
+            })
+        $img.addEventListener("click", () => {
+            window.open(url, "_blank")
+        })
+        return $img
+    }
+    const on_goto_usersview_press = () => {
+        $postsview.hidden = true
+        init_usersview()
+    }
+
+    init_usersview()
+</script>
+
+</html>
