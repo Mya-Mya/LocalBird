@@ -181,6 +181,8 @@ const createLocalbirdBar = () => {
     button.textContent = "Download postinfo JSON"
     button.style.width = "100%"
     button.style.height = "70px"
+    button.style.background = "black"
+    button.style.color = "white"
 
     const textarea = document.createElement("textarea")
     textarea.id = "LocalBirdJsonPreview"
@@ -188,6 +190,8 @@ const createLocalbirdBar = () => {
     textarea.readOnly = true
     textarea.style.width = "100%"
     textarea.style.boxSizing = "border-box"
+    textarea.style.background = "gray"
+    textarea.style.color = "white"
 
     bar.appendChild(button)
     bar.appendChild(textarea)
