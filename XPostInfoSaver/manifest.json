@@ -14,9 +14,6 @@
             ],
             "js": [
                 "common.js"
-            ],
-            "css":[
-                "style.css"
             ]
         }
     ]
