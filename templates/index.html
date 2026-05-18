@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LocalBird🐣</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
-        :root{
-            --pico-block-spacing-vertical: 0.5rem!important;
-            --pico-block-spacing-horizontal: 0.5rem!important;
+        :root {
+            --pico-block-spacing-vertical: 0.5rem !important;
+            --pico-block-spacing-horizontal: 0.5rem !important;
         }
+
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -26,10 +28,12 @@
         .card img {
             width: 100%;
             height: 150px;
-            object-fit: cover; /* 比率を保ちつつ枠を埋める */
+            object-fit: cover;
+            /* 比率を保ちつつ枠を埋める */
             border-radius: 4px;
             cursor: pointer;
-            background-color: #333; /* 読み込み前のプレースホルダ色 */
+            background-color: #333;
+            /* 読み込み前のプレースホルダ色 */
         }
 
         .card footer {
@@ -37,13 +41,14 @@
         }
     </style>
 </head>
+
 <body>
     <main>
         <section class="upload-section container">
             <details>
                 <summary role="button" class="outline">XPostInfoファイルをアップロード</summary>
                 <form id="uploadForm">
-                    <input type="file" id="jsonFile" accept=".json" required>
+                    <input type="file" id="jsonFile" accept=".json" required multiple>
                     <button type="submit" id="uploadBtn">インポート開始</button>
                     <progress id="uploadProgress" style="display:none;"></progress>
                 </form>
@@ -78,7 +83,7 @@
                         img.src = `/image/thumbnail/${post.postid}/${i}`;
                         img.loading = 'lazy';
                         link.appendChild(img);
-                        
+
                         // 情報表示
                         const footer = document.createElement('footer');
                         footer.innerHTML = `
@@ -88,7 +93,7 @@
 
                         article.appendChild(link);
                         article.appendChild(footer);
-                        
+
                         gallery.appendChild(article);
                     }
                 });
@@ -102,21 +107,11 @@
         window.onload = loadGallery;
 
         const uploadForm = document.getElementById('uploadForm');
-        // アップロード処理
-        uploadForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('jsonFile');
-            const btn = document.getElementById('uploadBtn');
-            const progress = document.getElementById('uploadProgress');
 
-            if (!fileInput.files[0]) return;
-
+        const postXPostInfo = async (file) => {
+            console.log("Posting", file)
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            btn.disabled = true;
-            progress.style.display = 'block';
-
+            formData.append('file', file);
             try {
                 const res = await fetch('/post-xpostinfo', {
                     method: 'POST',
@@ -130,12 +125,36 @@
                 }
             } catch (err) {
                 alert('通信エラーが発生しました');
+            }
+        }
+
+        // アップロード処理
+        uploadForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('jsonFile');
+            const btn = document.getElementById('uploadBtn');
+            const progress = document.getElementById('uploadProgress');
+
+            if (!fileInput.files[0]) return;
+
+            btn.disabled = true;
+            progress.style.display = 'block';
+
+            try {
+                for (const file of fileInput.files) {
+                    await postXPostInfo(file)
+                }
+            } catch (err) {
+                alert(err)
             } finally {
                 btn.disabled = false;
                 progress.style.display = 'none';
                 uploadForm.reset();
             }
+            uploadForm.reset();
+
         };
     </script>
 </body>
+
 </html>
