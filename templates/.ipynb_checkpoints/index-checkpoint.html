@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalBird🐣</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root{
+            --pico-block-spacing-vertical: 0.5rem!important;
+            --pico-block-spacing-horizontal: 0.5rem!important;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .card {
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover; /* 比率を保ちつつ枠を埋める */
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #333; /* 読み込み前のプレースホルダ色 */
+        }
+
+        .card footer {
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <section class="upload-section container">
+            <details>
+                <summary role="button" class="outline">XPostInfoファイルをアップロード</summary>
+                <form id="uploadForm">
+                    <input type="file" id="jsonFile" accept=".json" required>
+                    <button type="submit" id="uploadBtn">インポート開始</button>
+                    <progress id="uploadProgress" style="display:none;"></progress>
+                </form>
+            </details>
+        </section>
+        <div id="gallery" class="gallery-grid"></div>
+    </main>
+
+    <script>
+        async function loadGallery() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = "Loading";
+            try {
+                const response = await fetch('/detail/all');
+                const posts = await response.json();
+                console.table(posts)
+                gallery.innerHTML = "";
+
+                posts.forEach(post => {
+                    // 各投稿の画像枚数分、サムネイルを生成
+                    for (let i = 0; i < post.image_count; i++) {
+                        const article = document.createElement('article');
+                        article.className = 'card';
+
+                        // フルサイズ画像へのリンク
+                        const link = document.createElement('a');
+                        link.href = `/image/full/${post.postid}/${i}`;
+                        link.target = '_blank';
+
+                        // サムネイル画像 (loading="lazy" で節約)
+                        const img = document.createElement('img');
+                        img.src = `/image/thumbnail/${post.postid}/${i}`;
+                        img.loading = 'lazy';
+                        link.appendChild(img);
+                        
+                        // 情報表示
+                        const footer = document.createElement('footer');
+                        footer.innerHTML = `
+                            ${post.textcontent}<br>
+                            <small>${post.username} <strong>${post.timestamp}</strong></small>
+                        `;
+
+                        article.appendChild(link);
+                        article.appendChild(footer);
+                        
+                        gallery.appendChild(article);
+                    }
+                });
+            } catch (error) {
+                console.error("データの取得に失敗しました:", error);
+                gallery.innerHTML = "<p>データの読み込み中にエラーが発生しました。</p>";
+            }
+        }
+
+        // ページ読み込み時に実行
+        window.onload = loadGallery;
+
+        const uploadForm = document.getElementById('uploadForm');
+        // アップロード処理
+        uploadForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('jsonFile');
+            const btn = document.getElementById('uploadBtn');
+            const progress = document.getElementById('uploadProgress');
+
+            if (!fileInput.files[0]) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            btn.disabled = true;
+            progress.style.display = 'block';
+
+            try {
+                const res = await fetch('/post-xpostinfo', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    loadGallery(); // リロード
+                } else {
+                    alert('エラー: ' + result.error);
+                }
+            } catch (err) {
+                alert('通信エラーが発生しました');
+            } finally {
+                btn.disabled = false;
+                progress.style.display = 'none';
+                uploadForm.reset();
+            }
+        };
+    </script>
+</body>
+</html>
