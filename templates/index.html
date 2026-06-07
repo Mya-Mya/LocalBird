@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
         :root {
-            --pico-block-spacing-vertical: 0.5rem !important;
-            --pico-block-spacing-horizontal: 0.5rem !important;
+            --pico-block-spacing-vertical: 4pt !important;
+            --pico-block-spacing-horizontal: 4pt !important;
         }
 
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 0.5rem;
+            gap: 1pt;
         }
 
         .card {
@@ -30,7 +30,7 @@
             height: 150px;
             object-fit: cover;
             /* 比率を保ちつつ枠を埋める */
-            border-radius: 4px;
+            border-radius: 4pt;
             cursor: pointer;
             background-color: #333;
             /* 読み込み前のプレースホルダ色 */
