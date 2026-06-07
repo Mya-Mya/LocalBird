@@ -10,13 +10,14 @@ from gc import collect
 import requests
 
 app = Flask(__name__)
-app.json.ensure_ascii = False # 日本語のまま返却するように
+app.json.ensure_ascii = False  # 日本語のまま返却するように
 
 repo = MetaRepository()
 IMAGE_BASE_DIR = Path("./Images")
 THUMBNAIL_BASE_DIR = Path("./Thumbnails")
 
-def get_post_data(postid: str|int):
+
+def get_post_data(postid: str | int):
     data = repo.get(int(postid))
     if not data:
         return None
@@ -25,14 +26,16 @@ def get_post_data(postid: str|int):
         "username": data[1],
         "userid": data[2],
         "textcontent": data[3],
-        "timestamp": data[4]
+        "timestamp": data[4],
     }
 
-def get_image_file_path(userid:str, postid:str, index:int):
+
+def get_image_file_path(userid: str, postid: str, index: int):
     """画像ファイルのパスを構築する"""
     return IMAGE_BASE_DIR / str(userid) / f"{postid}.{index}.png"
 
-def count_images(userid:str, postid:int):
+
+def count_images(userid: str, postid: int):
     user_dir = IMAGE_BASE_DIR / str(userid)
     if not user_dir.exists():
         return 0
@@ -61,12 +64,14 @@ def download_image(url: str, dst: Path, skip_if_exists: bool = True):
             file.write(chunk)
     temp.replace(dst)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
 
-@app.route('/detail/<int:postid>', methods=['GET'])
-def get_detail(postid:int):
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/detail/<int:postid>", methods=["GET"])
+def get_detail(postid: int):
     data = get_post_data(postid)
     if not data:
         abort(404, description="Post not found")
@@ -74,7 +79,8 @@ def get_detail(postid:int):
     data["image_count"] = count_images(data["userid"], postid)
     return jsonify(data)
 
-@app.route('/detail/all', methods=['GET'])
+
+@app.route("/detail/all", methods=["GET"])
 def get_all_details():
     postids = repo.list()
     results = []
@@ -85,8 +91,9 @@ def get_all_details():
             results.append(data)
     return jsonify(results)
 
-@app.route('/image/full/<int:postid>/<int:index>', methods=['GET'])
-def get_full_image(postid:str, index:int):
+
+@app.route("/image/full/<int:postid>/<int:index>", methods=["GET"])
+def get_full_image(postid: str, index: int):
     data = get_post_data(postid)
     if not data:
         abort(404)
@@ -94,10 +101,11 @@ def get_full_image(postid:str, index:int):
     img_path = get_image_file_path(data["userid"], postid, index)
     if not img_path.exists():
         abort(404)
-    return send_file(img_path, mimetype='image/png')
+    return send_file(img_path, mimetype="image/png")
 
-@app.route('/image/thumbnail/<int:postid>/<int:index>')
-def get_thumbnail_image(postid:str, index:int):
+
+@app.route("/image/thumbnail/<int:postid>/<int:index>")
+def get_thumbnail_image(postid: str, index: int):
     data = get_post_data(postid)
     if not data:
         abort(404)
@@ -108,7 +116,7 @@ def get_thumbnail_image(postid:str, index:int):
 
     # 1. キャッシュ(サムネイル)が既に存在するか確認
     if thumb_path.exists():
-        return send_file(thumb_path, mimetype='image/png')
+        return send_file(thumb_path, mimetype="image/png")
 
     # 2. 元画像が存在するか確認
     if not original_path.exists():
@@ -122,26 +130,27 @@ def get_thumbnail_image(postid:str, index:int):
         with Image.open(original_path) as img:
             img.thumbnail((200, 200))
             # 最適化して保存
-            img.save(thumb_path, 'PNG', optimize=True)
+            img.save(thumb_path, "PNG", optimize=True)
         collect()
-        return send_file(thumb_path, mimetype='image/png')
+        return send_file(thumb_path, mimetype="image/png")
 
     except Exception as e:
         app.logger.error(f"Thumbnail creation failed: {e}")
         abort(500)
 
-@app.route('/post-xpostinfo', methods=['POST'])
+
+@app.route("/post-xpostinfo", methods=["POST"])
 def post_xpostinfo():
-    if 'file' not in request.files:
+    if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
 
-    file = request.files['file']
-    if file.filename == '':
+    file = request.files["file"]
+    if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
     try:
         # JSONを読み込み
-        content = file.read().decode('utf-8')
+        content = file.read().decode("utf-8")
         xpostinfo = json.loads(content)
         print(xpostinfo)
 
@@ -168,10 +177,10 @@ def post_xpostinfo():
         app.logger.error(f"Import failed: {e}")
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # サーバーの起動
     parser = ArgumentParser("LocalBird Server")
     parser.add_argument("--port", type=int, default=5000)
     args = parser.parse_args()
     app.run(host="0.0.0.0", debug=False, port=int(args.port))
-
