@@ -80,3 +80,44 @@ def process_single_json(xpostinfo: dict, repo: MetaRepository) -> bool:
         logger.error(f"Failed to import {postid}: {e}")
         return False
 
+
+def main():
+    parser = ArgumentParser(description="XPostInfo.json 一括取り込みツール")
+    parser.add_argument(
+        "directory",
+        type=str,
+        help="XPostInfo.json ファイルが複数格納されているディレクトリのパス",
+    )
+    args = parser.parse_args()
+
+    target_dir = Path(args.directory)
+    if not target_dir.is_dir():
+        logger.error(f"指定されたパスはディレクトリではありません: {target_dir}")
+        return
+
+    # リポジトリの初期化
+    repo = MetaRepository()
+
+    # ディレクトリ内の拡張子 .json ファイルを全検索
+    json_files = list(target_dir.glob("*.json"))
+    if not json_files:
+        logger.warning(
+            f"ディレクトリ内に JSON ファイルが見つかりませんでした: {target_dir}"
+        )
+        return
+
+    logger.info(f"{len(json_files)} 個の JSON ファイルの処理を開始します...")
+
+    success_count = 0
+    n_json_files = len(json_files)
+    for i, json_path in enumerate(json_files):
+        print(f"{i:02d}", "/", n_json_files, end="\r")
+        xpostinfo = json.loads(json_path.read_text(encoding="utf-8"))
+        if process_single_json(xpostinfo, repo):
+            success_count += 1
+    print()
+    logger.info(f"処理完了: 成功 {success_count} / 全体 {len(json_files)}")
+
+
+if __name__ == "__main__":
+    main()
