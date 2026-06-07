@@ -38,7 +38,7 @@ const extractPostInfo = () => {
     const timeElement = article.querySelector("time")
     const datetime = timeElement?.getAttribute("datetime") || ""
 
-    const groups = location.href.match(/https:\/\/x\.com\/(.*)\/status\/(.*)/)
+    const groups = location.href.match(/https:\/\/x\.com\/(.*)\/status\/(\d+)/)
     const userid = groups?.[1] || ""
     const postid = groups?.[2] || ""
 
