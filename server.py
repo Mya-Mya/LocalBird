@@ -8,6 +8,7 @@ import json
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from gc import collect
 import requests
+import postimporter
 
 app = Flask(__name__)
 app.json.ensure_ascii = False  # 日本語のまま返却するように
@@ -40,29 +41,6 @@ def count_images(userid: str, postid: int):
     if not user_dir.exists():
         return 0
     return len(list(user_dir.glob(f"{postid}.*.png")))
-
-def upgrade_image_url(url: str) -> str:
-    parsed = urlparse(url)
-    query_params = parse_qs(parsed.query)
-    query_params["format"] = ["png"]
-    query_params["name"] = ["4096x4096"]
-    new_query = urlencode(query_params, doseq=True)
-    return urlunparse(
-        (parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment)
-    )
-
-def download_image(url: str, dst: Path, skip_if_exists: bool = True):
-    if dst.exists() and skip_if_exists:
-        return
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    temp = dst.with_suffix(dst.suffix + ".temp")
-
-    result = requests.get(url, stream=True)
-    result.raise_for_status()
-    with open(temp, "wb") as file:
-        for chunk in result.iter_content(1024):
-            file.write(chunk)
-    temp.replace(dst)
 
 
 @app.route("/")
@@ -152,26 +130,10 @@ def post_xpostinfo():
         # JSONを読み込み
         content = file.read().decode("utf-8")
         xpostinfo = json.loads(content)
-        print(xpostinfo)
-
-        # メタデータの保存
-        repo.insert(
-            postid=int(xpostinfo["postid"]),
-            username=xpostinfo["username"],
-            userid=xpostinfo["userid"],
-            textcontent=xpostinfo["text"],
-            timestamp=xpostinfo["datetime"],
-            overwrite=True # 必要に応じて
-        )
-
-        # 画像のダウンロード
-        dst_parent = IMAGE_BASE_DIR / str(xpostinfo["userid"])
-        for i, imgsrc in enumerate(xpostinfo["imgsrcs"]):
-            dst = dst_parent / f"{xpostinfo['postid']}.{i}.png"
-            upgraded_url = upgrade_image_url(imgsrc)
-            download_image(upgraded_url, dst)
-
-        return jsonify({"message": f"Successfully imported post {xpostinfo['postid']}"}), 200
+        postimporter.process_single_json(xpostinfo, repo)
+        return jsonify(
+            {"message": f"Successfully imported post {xpostinfo['postid']}"}
+        ), 200
 
     except Exception as e:
         app.logger.error(f"Import failed: {e}")
