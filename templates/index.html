@@ -12,9 +12,25 @@
             --pico-block-spacing-horizontal: 4pt !important;
         }
 
+        :root {
+            --grid-width: 100px;
+        }
+
+        @media (min-width:512px) {
+            :root {
+                --grid-width: 250px;
+            }
+        }
+
+        @media(min-width:1024px) {
+            :root {
+                --grid-width: 300px;
+            }
+        }
+
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(var(--grid-width), 1fr));
             gap: 1pt;
         }
 
