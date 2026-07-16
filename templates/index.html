@@ -87,6 +87,9 @@
                     <img id="modal-img" style="width: 100%;">
                 </a>
             </div>
+            <footer>
+                <button id="modal-delete">削除</button>
+            </footer>
         </article>
     </dialog>
 
@@ -164,6 +167,23 @@
             const fullPath = `/image/full/${d.postid}/${d.idx}`;
             document.getElementById("modal-img").src = fullPath;
             document.getElementById("modal-anchor").href = fullPath;
+
+            const deleteButton = document.getElementById("modal-delete");
+            deleteButton.onclick = async () => {
+                if (!confirm("削除しますか？")) {
+                    return;
+                }
+                try {
+                    const response = await fetch(`/delete/${d.postid}`, { method: "POST" })
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert("削除に失敗しました：" + (await response.json()))
+                    }
+                } catch (error) {
+                    alert("通信エラーが発生しました：", new String(error));
+                }
+            }
 
             modal.setAttribute("open", "true");
         }

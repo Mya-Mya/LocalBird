@@ -63,3 +63,26 @@ class ImageRepository:
         except Exception as e:
             raise RuntimeError(f"Failed to generate thumbnail: {e}")
 
+    def delete_images(self, userid: int | str, postid: int | str) -> bool:
+        """
+        指定された投稿に関連するすべての画像およびサムネイルを物理ディスクから削除する。
+        """
+        deleted_any = False
+        # 元画像フォルダとサムネイルフォルダの両方をクリーンアップ
+        for base_dir in [self.image_dir, self.thumbnail_dir]:
+            user_dir = base_dir / str(userid)
+            if user_dir.exists():
+                for img_file in user_dir.glob(f"{postid}.*.png"):
+                    try:
+                        img_file.unlink()
+                        deleted_any = True
+                    except Exception:
+                        pass
+
+                # ユーザーのフォルダが空になった場合はフォルダごと削除
+                try:
+                    if not any(user_dir.iterdir()):
+                        user_dir.rmdir()
+                except Exception:
+                    pass
+        return deleted_any

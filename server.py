@@ -96,6 +96,22 @@ def post_xpostinfo():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/delete/<int:postid>", methods=["POST"])
+def delete_post(postid: int):
+    data = get_post_data(postid)
+    if not data:
+        abort(404)
+    userid = data["userid"]
+
+    # Meta Repositoryから削除
+    if not meta_repo.delete(postid):
+        return jsonify({"error": "Failed to delete meta data"}), 500
+
+    # Image Repositoryから削除
+    image_repo.delete_images(userid, postid)
+    return jsonify({"message": f"Deleted post {postid}"}), 200
+
+
 if __name__ == "__main__":
     # サーバーの起動
     parser = ArgumentParser("LocalBird Server")
