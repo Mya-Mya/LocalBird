@@ -5,9 +5,7 @@ from flask import Flask, jsonify, send_file, abort, render_template, request
 from PIL import Image
 from metarepository import MetaRepository
 import json
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from gc import collect
-import requests
 import postimporter
 
 app = Flask(__name__)
@@ -59,28 +57,6 @@ def index():
             post["images"] = list(range(img_count))
             posts.append(post)
     return render_template("index.html", posts=posts, page=page, limit=limit)
-
-
-@app.route("/detail/<int:postid>", methods=["GET"])
-def get_detail(postid: int):
-    data = get_post_data(postid)
-    if not data:
-        abort(404, description="Post not found")
-
-    data["image_count"] = count_images(data["userid"], postid)
-    return jsonify(data)
-
-
-@app.route("/detail/all", methods=["GET"])
-def get_all_details():
-    postids = repo.list()
-    results = []
-    for pid in postids:
-        data = get_post_data(pid)
-        if data:
-            data["image_count"] = count_images(data["userid"], pid)
-            results.append(data)
-    return jsonify(results)
 
 
 @app.route("/image/full/<int:postid>/<int:index>", methods=["GET"])
