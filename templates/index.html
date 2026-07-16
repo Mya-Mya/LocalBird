@@ -27,7 +27,7 @@
 
         .card img {
             width: 100%;
-            height: 150px;
+            height: 200px;
             object-fit: cover;
             /* 比率を保ちつつ枠を埋める */
             border-radius: 4pt;
@@ -40,7 +40,7 @@
             font-size: 0.8rem;
         }
 
-        #pagination{
+        #pagination {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -64,28 +64,39 @@
         <div id="gallery" class="gallery-grid">
             {% for post in posts %}
             {% for idx in post.images %}
-            <article class="card" id="card-{{ post.postid }}-{{ idx }}">
-                <div class="image-container">
-                    <a href="/image/full/{{ post.postid }}/{{ idx }}", target="_blank">
-                        <img src="/image/thumbnail/{{ post.postid }}/{{ idx }}" loading="lazy">
-                    </a>
-                </div>
-                <footer>
-                    {{ post.textcontent }}<br>
-                    <small>{{ post.username }} {{ post.timestamp }}</small>
-                </footer>
+            <article class="card" id="card-{{ post.postid }}-{{ idx }}" data-postid="{{ post.postid }}" ,
+                data-idx="{{ idx }}" data-username="{{ post.username }}" data-textcontent="{{ post.textcontent }}"
+                data-timestamp="{{ post.timestamp }}" onclick="openModalFromElement(this)">
+                <img src="/image/thumbnail/{{ post.postid }}/{{ idx }}" loading="lazy">
             </article>
             {% endfor %}
             {% endfor %}
         </div>
     </main>
+
+    <dialog id="detail-modal">
+        <article>
+            <header>
+                <button onclick="closeModal()">閉じる</button>
+                <p id="modal-username"></p>
+                <p id="modal-text"></p>
+                <small id="modal-timestamp"></small>
+            </header>
+            <div>
+                <a id="modal-anchor" style="width: 100%;">
+                    <img id="modal-img" style="width: 100%;">
+                </a>
+            </div>
+        </article>
+    </dialog>
+
     <footer id="pagination">
         {% if page > 1 %}
-            <a href="/?page={{ page - 1 }}"><button>←</button></a>
+        <a href="/?page={{ page - 1 }}"><button>←</button></a>
         {% endif %}
         <span> {{ page }} </span>
         {% if posts %}
-            <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
+        <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
         {% endif %}
     </footer>
 
@@ -140,6 +151,26 @@
             uploadForm.reset();
 
         };
+
+        // モーダルダイアログ管理
+        const modal = document.getElementById("detail-modal");
+
+        function openModalFromElement(element) {
+            const d = element.dataset;
+            document.getElementById("modal-username").innerText = d.username;
+            document.getElementById("modal-text").innerText = d.textcontent;
+            document.getElementById("modal-timestamp").innerText = d.timestamp;
+
+            const fullPath = `/image/full/${d.postid}/${d.idx}`;
+            document.getElementById("modal-img").src = fullPath;
+            document.getElementById("modal-anchor").href = fullPath;
+
+            modal.setAttribute("open", "true");
+        }
+
+        function closeModal() {
+            modal.removeAttribute("open");
+        }
     </script>
 </body>
 
