@@ -10,8 +10,7 @@ class MetaRepository:
 
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS main (
                     postid INTEGER PRIMARY KEY,
                     username TEXT NOT NULL,
@@ -19,8 +18,7 @@ class MetaRepository:
                     textcontent TEXT,
                     timestamp TEXT
                 )
-            """
-            )
+            """)
 
     def insert(
         self,
@@ -48,9 +46,11 @@ class MetaRepository:
             cursor = conn.execute("SELECT * FROM main WHERE postid = ?", (postid,))
             return cursor.fetchone()
 
-    def list(self) -> list[int]:
+    def list(self, limit: int = 50, offset: int = 0) -> list[int]:
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT postid FROM main ORDER BY postid DESC")
+            cursor = conn.execute(
+                "SELECT postid FROM main ORDER BY postid DESC LIMIT ? OFFSET ?", (limit, offset)
+            )
             result = cursor.fetchall()
             return [item[0] for item in result]
 

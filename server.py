@@ -45,7 +45,20 @@ def count_images(userid: str, postid: int):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # Read Arguments
+    limit = request.args.get("limit", 50, type=int)
+    page = request.args.get("page", 1, type=int)
+    offset = (page - 1) * limit
+    # Get Data
+    postids = repo.list(limit=limit, offset=offset)
+    posts = []
+    for pid in postids:
+        post = get_post_data(pid)
+        if post:
+            img_count = count_images(post["userid"], pid)
+            post["images"] = list(range(img_count))
+            posts.append(post)
+    return render_template("index.html", posts=posts, page=page, limit=limit)
 
 
 @app.route("/detail/<int:postid>", methods=["GET"])
@@ -131,9 +144,10 @@ def post_xpostinfo():
         content = file.read().decode("utf-8")
         xpostinfo = json.loads(content)
         postimporter.process_single_json(xpostinfo, repo)
-        return jsonify(
-            {"message": f"Successfully imported post {xpostinfo['postid']}"}
-        ), 200
+        return (
+            jsonify({"message": f"Successfully imported post {xpostinfo['postid']}"}),
+            200,
+        )
 
     except Exception as e:
         app.logger.error(f"Import failed: {e}")

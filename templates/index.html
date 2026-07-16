@@ -39,6 +39,13 @@
         .card footer {
             font-size: 0.8rem;
         }
+
+        #pagination{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
     </style>
 </head>
 
@@ -54,58 +61,35 @@
                 </form>
             </details>
         </section>
-        <div id="gallery" class="gallery-grid"></div>
+        <div id="gallery" class="gallery-grid">
+            {% for post in posts %}
+            {% for idx in post.images %}
+            <article class="card" id="card-{{ post.postid }}-{{ idx }}">
+                <div class="image-container">
+                    <a href="/image/full/{{ post.postid }}/{{ idx }}", target="_blank">
+                        <img src="/image/thumbnail/{{ post.postid }}/{{ idx }}" loading="lazy">
+                    </a>
+                </div>
+                <footer>
+                    {{ post.textcontent }}<br>
+                    <small>{{ post.username }} {{ post.timestamp }}</small>
+                </footer>
+            </article>
+            {% endfor %}
+            {% endfor %}
+        </div>
     </main>
+    <footer id="pagination">
+        {% if page > 1 %}
+            <a href="/?page={{ page - 1 }}"><button>←</button></a>
+        {% endif %}
+        <span> {{ page }} </span>
+        {% if posts %}
+            <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
+        {% endif %}
+    </footer>
 
     <script>
-        async function loadGallery() {
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = "Loading";
-            try {
-                const response = await fetch('/detail/all');
-                const posts = await response.json();
-                console.table(posts)
-                gallery.innerHTML = "";
-
-                posts.forEach(post => {
-                    // 各投稿の画像枚数分、サムネイルを生成
-                    for (let i = 0; i < post.image_count; i++) {
-                        const article = document.createElement('article');
-                        article.className = 'card';
-
-                        // フルサイズ画像へのリンク
-                        const link = document.createElement('a');
-                        link.href = `/image/full/${post.postid}/${i}`;
-                        link.target = '_blank';
-
-                        // サムネイル画像 (loading="lazy" で節約)
-                        const img = document.createElement('img');
-                        img.src = `/image/thumbnail/${post.postid}/${i}`;
-                        img.loading = 'lazy';
-                        link.appendChild(img);
-
-                        // 情報表示
-                        const footer = document.createElement('footer');
-                        footer.innerHTML = `
-                            ${post.textcontent}<br>
-                            <small>${post.username} <strong>${post.timestamp}</strong></small>
-                        `;
-
-                        article.appendChild(link);
-                        article.appendChild(footer);
-
-                        gallery.appendChild(article);
-                    }
-                });
-            } catch (error) {
-                console.error("データの取得に失敗しました:", error);
-                gallery.innerHTML = "<p>データの読み込み中にエラーが発生しました。</p>";
-            }
-        }
-
-        // ページ読み込み時に実行
-        window.onload = loadGallery;
-
         const uploadForm = document.getElementById('uploadForm');
 
         const postXPostInfo = async (file) => {
@@ -119,7 +103,7 @@
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    loadGallery(); // リロード
+                    // 何もしない
                 } else {
                     alert('エラー: ' + result.error);
                 }
@@ -144,6 +128,8 @@
                 for (const file of fileInput.files) {
                     await postXPostInfo(file)
                 }
+                // すべてのアップロードが完了したら再読み込み
+                window.location.reload();
             } catch (err) {
                 alert(err)
             } finally {
