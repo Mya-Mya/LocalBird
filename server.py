@@ -1,23 +1,18 @@
-import io
-from pathlib import Path
 from argparse import ArgumentParser
 from flask import Flask, jsonify, send_file, abort, render_template, request
-from PIL import Image
 from metarepository import MetaRepository
+from imagerepository import ImageRepository
 import json
-from gc import collect
 import postimporter
 
 app = Flask(__name__)
-app.json.ensure_ascii = False  # 日本語のまま返却するように
 
-repo = MetaRepository()
-IMAGE_BASE_DIR = Path("./Images")
-THUMBNAIL_BASE_DIR = Path("./Thumbnails")
+meta_repo = MetaRepository()
+image_repo = ImageRepository()
 
 
 def get_post_data(postid: str | int):
-    data = repo.get(int(postid))
+    data = meta_repo.get(int(postid))
     if not data:
         return None
     return {
@@ -29,18 +24,6 @@ def get_post_data(postid: str | int):
     }
 
 
-def get_image_file_path(userid: str, postid: str, index: int):
-    """画像ファイルのパスを構築する"""
-    return IMAGE_BASE_DIR / str(userid) / f"{postid}.{index}.png"
-
-
-def count_images(userid: str, postid: int):
-    user_dir = IMAGE_BASE_DIR / str(userid)
-    if not user_dir.exists():
-        return 0
-    return len(list(user_dir.glob(f"{postid}.*.png")))
-
-
 @app.route("/")
 def index():
     # Read Arguments
@@ -48,12 +31,12 @@ def index():
     page = request.args.get("page", 1, type=int)
     offset = (page - 1) * limit
     # Get Data
-    postids = repo.list(limit=limit, offset=offset)
+    postids = meta_repo.list(limit=limit, offset=offset)
     posts = []
     for pid in postids:
         post = get_post_data(pid)
         if post:
-            img_count = count_images(post["userid"], pid)
+            img_count = image_repo.count_images(post["userid"], pid)
             post["images"] = list(range(img_count))
             posts.append(post)
     return render_template("index.html", posts=posts, page=page, limit=limit)
@@ -65,8 +48,8 @@ def get_full_image(postid: str, index: int):
     if not data:
         abort(404)
 
-    img_path = get_image_file_path(data["userid"], postid, index)
-    if not img_path.exists():
+    img_path = image_repo.get_full_image_path(data["userid"], postid, index)
+    if not img_path:
         abort(404)
     return send_file(img_path, mimetype="image/png")
 
@@ -77,32 +60,15 @@ def get_thumbnail_image(postid: str, index: int):
     if not data:
         abort(404)
 
-    userid = data["userid"]
-    original_path = IMAGE_BASE_DIR / str(userid) / f"{postid}.{index}.png"
-    thumb_path = THUMBNAIL_BASE_DIR / str(userid) / f"{postid}.{index}.png"
-
-    # 1. キャッシュ(サムネイル)が既に存在するか確認
-    if thumb_path.exists():
-        return send_file(thumb_path, mimetype="image/png")
-
-    # 2. 元画像が存在するか確認
-    if not original_path.exists():
-        abort(404)
-
-    # 3. サムネイルの生成と保存
     try:
-        # 保存先ディレクトリの作成 (Thumbnails/<userid>/)
-        thumb_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with Image.open(original_path) as img:
-            img.thumbnail((200, 200))
-            # 最適化して保存
-            img.save(thumb_path, "PNG", optimize=True)
-        collect()
-        return send_file(thumb_path, mimetype="image/png")
-
+        thumbnail_path = image_repo.get_or_create_thumbnail_path(
+            data["userid"], postid, index
+        )
+        if not thumbnail_path:
+            abort(404)
+        return send_file(thumbnail_path, mimetype="image/png")
     except Exception as e:
-        app.logger.error(f"Thumbnail creation failed: {e}")
+        app.logger.error(f"Thumbnail error: {e}")
         abort(500)
 
 
@@ -119,7 +85,7 @@ def post_xpostinfo():
         # JSONを読み込み
         content = file.read().decode("utf-8")
         xpostinfo = json.loads(content)
-        postimporter.process_single_json(xpostinfo, repo)
+        postimporter.process_single_json(xpostinfo, meta_repo)
         return (
             jsonify({"message": f"Successfully imported post {xpostinfo['postid']}"}),
             200,
