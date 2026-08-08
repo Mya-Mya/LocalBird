@@ -1,9 +1,7 @@
 import json
 from io import BytesIO
 from urllib.parse import parse_qs, urlencode, urlunparse, urlparse
-import re
 import requests
-from bs4 import BeautifulSoup
 from dataclasses import dataclass, field
 from repository import *
 
