@@ -1,20 +1,28 @@
 import json
-import logging
-from argparse import ArgumentParser
-from pathlib import Path
+from io import BytesIO
 from urllib.parse import parse_qs, urlencode, urlunparse, urlparse
+import re
 import requests
+from bs4 import BeautifulSoup
+from dataclasses import dataclass, field
+from repository import *
 
-# 既存の MetaRepository クラスをインポート
-from metarepository import MetaRepository
 
-# ログの設定
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
-logger = logging.getLogger(__name__)
+@dataclass
+class Post:
+    meta: Meta = field(default_factory=Meta)
+    image_srcs: list[str] = field(default_factory=list)
 
-IMAGE_BASE_DIR = Path("./Images")
+    @staticmethod
+    def from_dict(d: dict):
+        return Post(meta=Meta.from_dict(d["meta"]), image_srcs=d["image_srcs"])
+
+    @staticmethod
+    def from_json(json_text: str):
+        return Post.from_dict(json.loads(json_text))
+
+    def to_dict(self):
+        return {"meta": self.meta.to_dict(), "image_srcs": self.image_srcs}
 
 
 def upgrade_image_url(url: str) -> str:
@@ -36,101 +44,17 @@ def upgrade_image_url(url: str) -> str:
     )
 
 
-def download_image(url: str, dst: Path, skip_if_exists: bool = True):
-    """画像をダウンロードして保存する"""
-    if dst.exists() and skip_if_exists:
-        return
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    temp = dst.with_suffix(dst.suffix + ".temp")
-
-    result = requests.get(url, stream=True)
-    result.raise_for_status()
-    with open(temp, "wb") as file:
-        for chunk in result.iter_content(1024):
-            file.write(chunk)
-    temp.replace(dst)
+def fetch_image(url: str):
+    result = requests.get(url)
+    image = Image.open(BytesIO(result.content))
+    return image
 
 
-def process_single_json(xpostinfo: dict, repo: MetaRepository) -> bool:
-    """1つのXPostInfoを解析し、DB登録と画像ダウンロードを行う"""
-    postid = int(xpostinfo["postid"])
-    userid = xpostinfo["userid"]
-    try:
-        # メタデータの保存
-        repo.insert(
-            postid=postid,
-            username=xpostinfo["username"],
-            userid=userid,
-            textcontent=xpostinfo["text"],
-            timestamp=xpostinfo["datetime"],
-            overwrite=True,
-        )
-
-        # 画像のダウンロード
-        dst_parent = IMAGE_BASE_DIR / str(userid)
-        for i, imgsrc in enumerate(xpostinfo.get("imgsrcs", [])):
-            dst = dst_parent / f"{postid}.{i}.png"
-            upgraded_url = upgrade_image_url(imgsrc)
-            download_image(upgraded_url, dst)
-
-        logger.info(f"Successfully imported post {postid}")
-        return True
-
-    except Exception as e:
-        logger.error(f"Failed to import {postid}: {e}")
-        return False
-
-def process_x_page(url:str):
-    pass
-
-def main():
-    parser = ArgumentParser(description="ポスト取り込みツール")
-    parser.add_argument(
-        "--directory",
-        type=str,
-        help="XPostInfo.json ファイルが複数格納されているディレクトリのパス",
-    )
-    parser.add_argument(
-        "--url",
-        type=str,
-        default=None,
-        help="XポストURL"
-    )
-    args = parser.parse_args()
-
-
-
-    # リポジトリの初期化
-    repo = MetaRepository()
-
-    if args.url is None:
-        logger.info("X PostInfoファイルを取り込みます")
-        target_dir = Path(args.directory)
-        if not target_dir.is_dir():
-            logger.error(f"指定されたパスはディレクトリではありません: {target_dir}")
-            return
-        # ディレクトリ内の拡張子 .json ファイルを全検索
-        json_files = list(target_dir.glob("*.json"))
-        if not json_files:
-            logger.warning(
-                f"ディレクトリ内に JSON ファイルが見つかりませんでした: {target_dir}"
-            )
-            return
-
-        logger.info(f"{len(json_files)} 個の JSON ファイルの処理を開始します...")
-
-        success_count = 0
-        n_json_files = len(json_files)
-        for i, json_path in enumerate(json_files):
-            print(f"{i:02d}", "/", n_json_files, end="\r")
-            xpostinfo = json.loads(json_path.read_text(encoding="utf-8"))
-            if process_single_json(xpostinfo, repo):
-                success_count += 1
-        print()
-        logger.info(f"処理完了: 成功 {success_count} / 全体 {len(json_files)}")
-    else:
-        logger.info("X ページを取り込みます")
-        process_x_page(args.url)
-
-if __name__ == "__main__":
-    main()
+def add_images_by_post(repo: Repository, post: Post) -> list[str]:
+    images = []
+    for src in post.image_srcs:
+        url = upgrade_image_url(src)
+        image = fetch_image(url)
+        images.append(image)
+    filenames = repo.add_images(images, post.meta)
+    return filenames
