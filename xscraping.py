@@ -1,0 +1,76 @@
+from pathlib import Path
+from argparse import ArgumentParser
+import json
+from xml.sax.saxutils import unescape
+import re
+import requests
+from bs4 import BeautifulSoup
+from postimporter import Post
+from repository import Meta
+
+IMAGE_URL_PATTERN = re.compile(r"https://pbs.twimg.com/media/.*")
+
+
+def extract_post_from_x_page(url: str) -> Post:
+    response = requests.get(url)
+    if not response.ok:
+        raise ValueError(f"Response is not OK: Status Code = {response.status_code}")
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    post = Post()
+
+    # ID
+    id_element = soup.find(name="meta", attrs={"itemprop": "identifier"})
+    if id_element and id_element.has_attr("content"):
+        post.meta.id = str(id_element.attrs["content"])
+
+    # Author Name
+    author_name_element = soup.find(name="meta", attrs={"itemprop": "name"})
+    if author_name_element and author_name_element.has_attr("content"):
+        post.meta.author_name = str(author_name_element.attrs["content"])
+
+    # Author ID
+    author_id_element = soup.find(name="meta", attrs={"name": "twitter:creator"})
+    if author_id_element and author_id_element.has_attr("content"):
+        post.meta.author_id = str(author_id_element.attrs["content"])[1:]
+
+    # Text
+    text_element = soup.find(name="meta", attrs={"name": "twitter:description"})
+    if text_element and text_element.has_attr("content"):
+        post.meta.text = str(text_element.attrs["content"])
+
+    # Created At
+    created_at_element = soup.find(
+        name="meta", attrs={"property": "article:published_time"}
+    )
+    if created_at_element and created_at_element.has_attr("content"):
+        post.meta.created_at = str(created_at_element.attrs["content"])
+
+    # Image Sources
+    image_elements = soup.find_all(name="img", attrs={"src": IMAGE_URL_PATTERN})
+    post.image_srcs = [unescape(str(e.attrs["src"])) for e in image_elements]
+    if not post.image_srcs:
+        raise ValueError("The post has no images")
+
+    return post
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser(
+        prog="LocalBird", description="Extracts Post data from X page and creates JSON"
+    )
+    parser.add_argument("url", type=str, help="The X page url")
+    parser.add_argument("destination", type=Path, help="Directory to save the JSON")
+    args = parser.parse_args()
+
+    try:
+        post = extract_post_from_x_page(args.url)
+    except Exception as e:
+        print("Error")
+        print(e)
+        exit(-1)
+    destination = Path(args.destination)
+    destination.mkdir(parents=True, exist_ok=True)
+
+    post_json = json.dumps(post.to_dict(), ensure_ascii=False)
+    (destination / f"{post.meta.id}.json").write_text(post_json)
