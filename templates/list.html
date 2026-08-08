@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalBird🐣</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        :root {
+            --pico-block-spacing-vertical: 4pt !important;
+            --pico-block-spacing-horizontal: 4pt !important;
+        }
+
+        :root {
+            --grid-width: 100px;
+        }
+
+        @media (min-width:512px) {
+            :root {
+                --grid-width: 250px;
+            }
+        }
+
+        @media(min-width:1024px) {
+            :root {
+                --grid-width: 300px;
+            }
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(var(--grid-width), 1fr));
+            gap: 1pt;
+        }
+
+        .card {
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            /* 比率を保ちつつ枠を埋める */
+            border-radius: 4pt;
+            cursor: pointer;
+            background-color: #333;
+            /* 読み込み前のプレースホルダ色 */
+        }
+
+        .card footer {
+            font-size: 0.8rem;
+        }
+
+        #pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <div id="gallery" class="gallery-grid">
+            {% for filename in filenames %}
+            <a href="/detail/{{ filename }}" target="_blank">
+                <article class="card">
+                    <img src="/image/thumbnail/{{ filename }}" loading="lazy">
+                </article>
+            </a>
+            {% endfor %}
+        </div>
+    </main>
+
+    <footer id="pagination">
+        {% if page > 1 %}
+        <a href="/?page={{ page - 1 }}"><button>←</button></a>
+        {% endif %}
+        <span> {{ page }} </span>
+        {% if filenames %}
+        <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
+        {% endif %}
+    </footer>
+
+</body>
+
+</html>

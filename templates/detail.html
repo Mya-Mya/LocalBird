@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail🐣</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+
+</head>
+
+<body>
+    <main>
+        <figure>
+            <a href="/image/full/{{ filename }}">
+                <img src="/image/full/{{ filename }}">
+            </a>
+        </figure>
+        <article>
+            <p>{{ id }}</p>
+            <p>{{ author_name }}</p>
+            <p>{{ author_id }}</p>
+            <p>{{ text }}</p>
+            <p>{{ created_at }}</p>
+        </article>
+    </main>
+</body>
+
+</html>

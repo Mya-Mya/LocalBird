@@ -1,27 +1,12 @@
 from argparse import ArgumentParser
 from flask import Flask, jsonify, send_file, abort, render_template, request
-from metarepository import MetaRepository
-from imagerepository import ImageRepository
 import json
+from repository import *
 import postimporter
 
 app = Flask(__name__)
 
-meta_repo = MetaRepository()
-image_repo = ImageRepository()
-
-
-def get_post_data(postid: str | int):
-    data = meta_repo.get(int(postid))
-    if not data:
-        return None
-    return {
-        "postid": str(data[0]),
-        "username": data[1],
-        "userid": data[2],
-        "textcontent": data[3],
-        "timestamp": data[4],
-    }
+repo = Repository()
 
 
 @app.route("/")
@@ -31,45 +16,34 @@ def index():
     page = request.args.get("page", 1, type=int)
     offset = (page - 1) * limit
     # Get Data
-    postids = meta_repo.list(limit=limit, offset=offset)
-    posts = []
-    for pid in postids:
-        post = get_post_data(pid)
-        if post:
-            img_count = image_repo.count_images(post["userid"], pid)
-            post["images"] = list(range(img_count))
-            posts.append(post)
-    return render_template("index.html", posts=posts, page=page, limit=limit)
+    filenames = repo.list(limit=limit, offset=offset)
+    return render_template("list.html", filenames=filenames, page=page)
 
 
-@app.route("/image/full/<int:postid>/<int:index>", methods=["GET"])
-def get_full_image(postid: str, index: int):
-    data = get_post_data(postid)
-    if not data:
-        abort(404)
+@app.get("/detail/<string:filename>")
+def get_detail(filename: str):
+    ai = repo.get_image(filename)
+    meta = ai.meta
+    return render_template(
+        "detail.html",
+        filename=filename,
+        id=meta.id,
+        author_name=meta.author_name,
+        author_id=meta.author_id,
+        text=meta.text,
+        created_at=meta.created_at,
+    )
 
-    img_path = image_repo.get_full_image_path(data["userid"], postid, index)
-    if not img_path:
-        abort(404)
-    return send_file(img_path, mimetype="image/png")
+
+@app.get("/image/thumbnail/<string:filename>")
+def get_thumbnail(filename: str):
+    repo.prepare_thumbnail(filename)
+    return send_file(repo.get_thumbnail_path(filename))
 
 
-@app.route("/image/thumbnail/<int:postid>/<int:index>")
-def get_thumbnail_image(postid: str, index: int):
-    data = get_post_data(postid)
-    if not data:
-        abort(404)
-
-    try:
-        thumbnail_path = image_repo.get_or_create_thumbnail_path(
-            data["userid"], postid, index
-        )
-        if not thumbnail_path:
-            abort(404)
-        return send_file(thumbnail_path, mimetype="image/png")
-    except Exception as e:
-        app.logger.error(f"Thumbnail error: {e}")
-        abort(500)
+@app.get("/image/full/<string:filename>")
+def get_full(filename: str):
+    return send_file(repo.get_image_path(filename))
 
 
 @app.route("/post-xpostinfo", methods=["POST"])
@@ -96,20 +70,10 @@ def post_xpostinfo():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/delete/<int:postid>", methods=["POST"])
-def delete_post(postid: int):
-    data = get_post_data(postid)
-    if not data:
-        abort(404)
-    userid = data["userid"]
-
-    # Meta Repositoryから削除
-    if not meta_repo.delete(postid):
-        return jsonify({"error": "Failed to delete meta data"}), 500
-
-    # Image Repositoryから削除
-    image_repo.delete_images(userid, postid)
-    return jsonify({"message": f"Deleted post {postid}"}), 200
+@app.post("/delete/<string:filename>")
+def delete_post(filename: str):
+    repo.delete(filename)
+    return jsonify({"message": f"Deleted image {filename}"}), 200
 
 
 if __name__ == "__main__":
