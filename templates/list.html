@@ -56,7 +56,7 @@
             font-size: 0.8rem;
         }
 
-        #pagination {
+        .pagination {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -66,6 +66,20 @@
 </head>
 
 <body>
+    <header class="container">
+        <nav>
+            <a href="./add"><button>Add</button></a>
+        </nav>
+        <div class="pagination">
+        {% if page > 1 %}
+        <a href="/?page={{ page - 1 }}"><button>←</button></a>
+        {% endif %}
+        <span> {{ page }} </span>
+        {% if filenames %}
+        <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
+        {% endif %}
+        </div>
+    </header>
     <main>
         <div id="gallery" class="gallery-grid">
             {% for filename in filenames %}
@@ -78,14 +92,16 @@
         </div>
     </main>
 
-    <footer id="pagination">
-        {% if page > 1 %}
-        <a href="/?page={{ page - 1 }}"><button>←</button></a>
-        {% endif %}
-        <span> {{ page }} </span>
-        {% if filenames %}
-        <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
-        {% endif %}
+    <footer class="container">
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="/?page={{ page - 1 }}"><button>←</button></a>
+            {% endif %}
+            <span> {{ page }} </span>
+            {% if filenames %}
+            <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
+            {% endif %}
+        </div>
     </footer>
 
 </body>
