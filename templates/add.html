@@ -90,7 +90,10 @@
                 body: JSON.stringify({ url })
             })
             if (response.ok) {
-                location.href = "../"
+                $XSubmitButton.value = "Done"
+                setTimeout(() => {
+                    $XSubmitButton.value = "Submit"
+                }, 500);
             } else {
                 const message = String((await response.json()).error)
                 alert("[Not OK] Failed to submit: " + message)
