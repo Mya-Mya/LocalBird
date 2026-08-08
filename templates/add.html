@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Posts - LocalBird🐣</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+    <style>
+        button {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h2>Add Posts</h2>
+
+        <article>
+            <h3>From JSON Files</h3>
+            <input type="file" id="json-files" name="files" accept=".json" multiple>
+            <button type="button" id="json-files-submit">Submit</button>
+        </article>
+
+        <article>
+            <h3>From X</h3>
+            <input type="text" name="url" id="x-url" placeholder="URL"></input>
+            <button type="button" id="x-submit">Submit</button>
+        </article>
+    </main>
+</body>
+
+<script>
+    /**@returns {HTMLElement} */
+    const $ = (selectors) => document.querySelector(selectors)
+
+    const $JsonFilesSubmitButton = $("#json-files-submit")
+    const $JsonFiles = $("#json-files")
+    $JsonFilesSubmitButton.addEventListener("click", async (e) => {
+        e.preventDefault()
+        /**@type {File[]}*/
+        const files = $JsonFiles.files
+        if (files.length == 0) {
+            alert("Select files")
+            return
+        }
+
+        $JsonFilesSubmitButton.disabled = true
+
+        let anyError = false
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i]
+            try {
+                const text = await file.text()
+                const response = await fetch("/add/from-json", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: text
+                })
+                if (!response.ok) {
+                    anyError = true
+                    message = String((await response.json()).error)
+                    alert("[Not OK] Failed to submit " + file.name + ": " + message)
+                }
+            } catch (error) {
+                anyError = true
+                alert("[Exception] Failed to submit " + file.name + ": " + error)
+            }
+        }
+        $JsonFiles.value = ""
+        $JsonFilesSubmitButton.disbled = false
+
+        if (!anyError) {
+            location.href = "../"
+        }
+    })
+
+    const $XSubmitButton = $("#x-submit")
+    const $XUrl = $("#x-url")
+    $XSubmitButton.addEventListener("click", async (e) => {
+        e.preventDefault()
+
+        $XSubmitButton.disabled = true
+        const url = String($XUrl.value)
+        try {
+            const response = await fetch("/add/from-x", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url })
+            })
+            if (response.ok) {
+                location.href = "../"
+            } else {
+                const message = String((await response.json()).error)
+                alert("[Not OK] Failed to submit: " + message)
+            }
+        } catch (error) {
+            alert("[Exception] Failed to submit: " + String(error))
+        }
+        $XUrl.value = ""
+        $XSubmitButton.disabled = false
+    })
+</script>
+
+</html>
