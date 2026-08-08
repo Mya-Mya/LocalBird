@@ -22,7 +22,7 @@ class Meta:
     def to_pnginfo(self):
         pi = PngInfo()
         for key, value in self.to_dict().items():
-            pi.add_itxt(key, value)
+            pi.add_itxt(key, value if value is not None else "")
         return pi
 
 
