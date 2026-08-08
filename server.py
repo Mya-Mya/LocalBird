@@ -88,30 +88,6 @@ def get_full(filename: str):
     return send_file(repo.get_image_path(filename))
 
 
-@app.route("/post-xpostinfo", methods=["POST"])
-def post_xpostinfo():
-    if "file" not in request.files:
-        return jsonify({"error": "No file part"}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
-
-    try:
-        # JSONを読み込み
-        content = file.read().decode("utf-8")
-        xpostinfo = json.loads(content)
-        postimporter.process_single_json(xpostinfo, meta_repo)
-        return (
-            jsonify({"message": f"Successfully imported post {xpostinfo['postid']}"}),
-            200,
-        )
-
-    except Exception as e:
-        app.logger.error(f"Import failed: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
 @app.post("/delete/<string:filename>")
 def delete_post(filename: str):
     repo.delete(filename)
