@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "XPostSaver",
+    "version": "1.0",
+    "description": "Download X post data as JSON file.",
+    "permissions": [
+        "downloads",
+        "activeTab",
+        "scripting"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "commands": {
+        "_execute_action": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+X"
+            },
+            "description": "Open Popup"
+        }
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://x.com/*/status/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}

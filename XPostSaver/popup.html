@@ -1,0 +1,28 @@
+<html lang="en">
+<style>
+    @import url("https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.zinc.min.css");
+</style>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script defer src="popup.js"></script>
+    <title>X Post Saver</title>
+</head>
+
+<body style="width: 500px;">
+    <main>
+        <article id="extracted-status" hidden>
+            <button id="download-button">Download JSON (Enter)</button>
+            <textarea rows="10" id="json-preview" disabled></textarea>
+        </article>
+        <article id="extracting-status" style="text-align: center;">
+            <p>Extracting</p>
+        </article>
+    </main>
+    <footer>
+        <a href="https://github.com/Mya-Mya/LocalBird" target="_blank">LocalBird (GitHub)</a>
+    </footer>
+</body>
+
+</html>
