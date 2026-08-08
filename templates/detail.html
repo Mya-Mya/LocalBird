@@ -22,8 +22,27 @@
             <p>{{ author_id }}</p>
             <p>{{ text }}</p>
             <p>{{ created_at }}</p>
+            <button onclick="handleDelete();">Delete</button>
         </article>
     </main>
 </body>
+
+<script>
+    const handleDelete = async () => {
+        if (!confirm("Delete this image?")) {
+            return
+        }
+        try {
+            const response = await fetch("/delete/{{ filename }}", { method: "POST" })
+            if (response.ok) {
+                window.close()
+            } else {
+                alert("Failed to delete")
+            }
+        } catch (e) {
+            alert("Failed to delete: " + String(e))
+        }
+    }
+</script>
 
 </html>
