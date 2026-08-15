@@ -23,6 +23,10 @@ def extract_post_from_x_page(url: str) -> Post:
     id_element = soup.find(name="meta", attrs={"itemprop": "identifier"})
     if id_element and id_element.has_attr("content"):
         post.meta.id = str(id_element.attrs["content"])
+    else:
+        id_element = soup.find(name="article", attrs={"data-tweet-id": True})
+        if id_element:
+            post.meta.id = str(id_element.attrs["data-tweet-id"])
 
     # Author Name
     author_name_element = soup.find(name="meta", attrs={"itemprop": "name"})
