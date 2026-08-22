@@ -73,10 +73,14 @@
         <div class="pagination">
         {% if page > 1 %}
         <a href="/?page={{ page - 1 }}"><button>←</button></a>
+        {% else %}
+        <button disabled>←</button>
         {% endif %}
         <span> {{ page }} </span>
         {% if filenames %}
         <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
+        {% else %}
+        <button disabled>→</button>
         {% endif %}
         </div>
     </header>
@@ -94,13 +98,17 @@
 
     <footer class="container">
         <div class="pagination">
-            {% if page > 1 %}
-            <a href="/?page={{ page - 1 }}"><button>←</button></a>
-            {% endif %}
-            <span> {{ page }} </span>
-            {% if filenames %}
-            <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
-            {% endif %}
+        {% if page > 1 %}
+        <a href="/?page={{ page - 1 }}"><button>←</button></a>
+        {% else %}
+        <button disabled>←</button>
+        {% endif %}
+        <span> {{ page }} </span>
+        {% if filenames %}
+        <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
+        {% else %}
+        <button disabled>→</button>
+        {% endif %}
         </div>
     </footer>
 
