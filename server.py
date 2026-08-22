@@ -18,8 +18,8 @@ def index():
     page = request.args.get("page", 1, type=int)
     offset = (page - 1) * limit
     # Get Data
-    filenames = repo.list(limit=limit, offset=offset)
-    return render_template("list.html", filenames=filenames, page=page)
+    basenames = repo.list(limit=limit, offset=offset)
+    return render_template("list.html", basenames=basenames, page=page)
 
 
 @app.get("/add")
@@ -39,8 +39,8 @@ def post_add_from_json():
         else:
             return jsonify({"error": "No JSON data"}), 400
         post = Post.from_dict(data)
-        filenames = add_images_by_post(repo, post)
-        return jsonify({"filenames": filenames}), 200
+        basenames = add_images_by_post(repo, post)
+        return jsonify({"basenames": basenames}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -56,19 +56,19 @@ def post_add_from_x():
         if not url:
             return jsonify({"error": "No URL"}), 400
         post = extract_post_from_x_page(url)
-        filenames = add_images_by_post(repo, post)
-        return jsonify({"filenames": filenames}), 200
+        basenames = add_images_by_post(repo, post)
+        return jsonify({"basenames": basenames}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 
-@app.get("/detail/<string:filename>")
-def get_detail(filename: str):
-    ai = repo.get_image(filename)
+@app.get("/detail/<string:basename>")
+def get_detail(basename: str):
+    ai = repo.get_image(basename)
     meta = ai.meta
     return render_template(
         "detail.html",
-        filename=filename,
+        basename=basename,
         id=meta.id,
         author_name=meta.author_name,
         author_id=meta.author_id,
@@ -77,21 +77,21 @@ def get_detail(filename: str):
     )
 
 
-@app.get("/image/thumbnail/<string:filename>")
-def get_thumbnail(filename: str):
-    repo.prepare_thumbnail(filename)
-    return send_file(repo.get_thumbnail_path(filename))
+@app.get("/image/thumbnail/<string:basename>")
+def get_thumbnail(basename: str):
+    repo.prepare_thumbnail(basename)
+    return send_file(repo.get_thumbnail_path(basename))
 
 
-@app.get("/image/full/<string:filename>")
-def get_full(filename: str):
-    return send_file(repo.get_image_path(filename))
+@app.get("/image/full/<string:basename>")
+def get_full(basename: str):
+    return send_file(repo.get_image_path(basename))
 
 
-@app.post("/delete/<string:filename>")
-def delete_post(filename: str):
-    repo.delete(filename)
-    return jsonify({"message": f"Deleted image {filename}"}), 200
+@app.post("/delete/<string:basename>")
+def delete_post(basename: str):
+    repo.delete(basename)
+    return jsonify({"message": f"Deleted image {basename}"}), 200
 
 
 if __name__ == "__main__":

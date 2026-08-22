@@ -12,8 +12,8 @@
 <body>
     <main>
         <figure>
-            <a href="/image/full/{{ filename }}">
-                <img src="/image/full/{{ filename }}">
+            <a href="/image/full/{{ basename }}">
+                <img src="/image/full/{{ basename }}">
             </a>
         </figure>
         <article>
@@ -33,7 +33,7 @@
             return
         }
         try {
-            const response = await fetch("/delete/{{ filename }}", { method: "POST" })
+            const response = await fetch("/delete/{{ basename }}", { method: "POST" })
             if (response.ok) {
                 window.close()
             } else {

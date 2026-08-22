@@ -77,7 +77,7 @@
         <button disabled>←</button>
         {% endif %}
         <span> {{ page }} </span>
-        {% if filenames %}
+        {% if basenames %}
         <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
         {% else %}
         <button disabled>→</button>
@@ -86,10 +86,10 @@
     </header>
     <main>
         <div id="gallery" class="gallery-grid">
-            {% for filename in filenames %}
-            <a href="/detail/{{ filename }}" target="_blank">
+            {% for basename in basenames %}
+            <a href="/detail/{{ basename }}" target="_blank">
                 <article class="card">
-                    <img src="/image/thumbnail/{{ filename }}" loading="lazy">
+                    <img src="/image/thumbnail/{{ basename }}" loading="lazy">
                 </article>
             </a>
             {% endfor %}
@@ -104,7 +104,7 @@
         <button disabled>←</button>
         {% endif %}
         <span> {{ page }} </span>
-        {% if filenames %}
+        {% if basenames %}
         <a class="button" href="/?page={{ page + 1 }}"><button>→</button></a>
         {% else %}
         <button disabled>→</button>
