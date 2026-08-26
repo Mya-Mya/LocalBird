@@ -11,6 +11,66 @@ from repository import Meta
 IMAGE_URL_PATTERN = re.compile(r"https://pbs.twimg.com/media/.*")
 
 
+def extract_id(x_soup: BeautifulSoup, url: str) -> str | None:
+    # Page-based search
+
+    # <meta itemprop="identifier" content="{{id}}" />
+    id_element = x_soup.find(name="meta", attrs={"itemprop": "identifier"})
+    if id_element and id_element.has_attr("content"):
+        id = str(id_element.attrs["content"])
+        return id
+
+    # <meta itemprop="url" content=".../status/{{id}}" />
+    id_element = x_soup.find(name="meta", attrs={"itemprop": "url"})
+    if id_element and id_element.has_attr("content"):
+        content = str(id_element.attrs["content"])
+        mat = re.search(r"/status/(\d+)", content)
+        if mat:
+            id = str(mat.group(1))
+            return id
+
+    # <article data-tweet-id="{{id}}">
+    id_element = x_soup.find(name="article", attrs={"data-tweet-id": True})
+    if id_element:
+        id = str(id_element.attrs["data-tweet-id"])
+        return id
+
+    # <meta content=".../status/{{id}}" />
+    id_element = x_soup.find(name="meta", attrs={"property": "og:url"})
+    if id_element and id_element.has_attr("content"):
+        content = str(id_element.attrs["content"])
+        mat = re.search(r"/status/(\d+)", content)
+        if mat:
+            id = str(mat.group(1))
+            return id
+
+    # <meta property="al:ios:url" content="...id={{id}}" />
+    id_element = x_soup.find(name="meta", attrs={"property": "al:ios:url"})
+    if id_element and id_element.has_attr("content"):
+        content = str(id_element.attrs["content"])
+        mat = re.search(r"id=(\d+)", content)
+        if mat:
+            id = str(mat.group(1))
+            return id
+
+    # <meta property="al:android:url" content="...id={{id}}" />
+    id_element = x_soup.find(name="meta", attrs={"property": "al:android:url"})
+    if id_element and id_element.has_attr("content"):
+        content = str(id_element.attrs["content"])
+        mat = re.search(r"id=(\d+)", content)
+        if mat:
+            id = str(mat.group(1))
+            return id
+
+    # URL-based search
+    mat = re.search(r"https://x\.com/[^/]+/status/(\d+)", url)
+    if mat:
+        id = str(mat.group(1))
+        return id
+
+    return None
+
+
 def extract_post_from_x_page(url: str) -> Post:
     response = requests.get(url)
     if not response.ok:
@@ -20,13 +80,7 @@ def extract_post_from_x_page(url: str) -> Post:
     post = Post()
 
     # ID
-    id_element = soup.find(name="meta", attrs={"itemprop": "identifier"})
-    if id_element and id_element.has_attr("content"):
-        post.meta.id = str(id_element.attrs["content"])
-    else:
-        id_element = soup.find(name="article", attrs={"data-tweet-id": True})
-        if id_element:
-            post.meta.id = str(id_element.attrs["data-tweet-id"])
+    post.meta.id = extract_id(soup, url)
 
     # Author Name
     author_name_element = soup.find(name="meta", attrs={"itemprop": "name"})
