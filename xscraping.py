@@ -106,7 +106,13 @@ def extract_post_from_x_page(url: str) -> Post:
 
     # Image Sources
     image_elements = soup.find_all(name="img", attrs={"src": IMAGE_URL_PATTERN})
-    post.image_srcs = [unescape(str(e.attrs["src"])) for e in image_elements]
+    image_srcs = []
+    for image_element in image_elements:
+        src = str(image_element.attrs["src"])
+        unescaped_src = unescape(src)
+        if unescaped_src not in image_srcs:
+            image_srcs.append(unescaped_src)
+    post.image_srcs = image_srcs
     if not post.image_srcs:
         raise ValueError("The post has no images")
 
