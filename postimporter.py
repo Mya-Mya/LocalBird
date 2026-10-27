@@ -56,3 +56,22 @@ def add_images_by_post(repo: Repository, post: Post) -> list[str]:
         images.append(image)
     filenames = repo.add_images(images, post.meta)
     return filenames
+
+
+def open_local_image(file) -> Image.Image:
+    """パス or ファイルオブジェクトから画像を開き，PNG保存可能な形式にする"""
+    image = Image.open(file)
+    image.load()
+    if image.mode not in ("RGB", "RGBA", "L", "LA", "P"):
+        image = image.convert("RGBA")
+    return image
+
+
+def add_images_by_files(repo: Repository, meta: Meta, files: list) -> list[str]:
+    """手動で用意した画像ファイルとメタデータを登録する"""
+    if not meta.id:
+        raise ValueError("The id is required")
+    if not files:
+        raise ValueError("No images")
+    images = [open_local_image(file) for file in files]
+    return repo.add_images(images, meta)

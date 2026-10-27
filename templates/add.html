@@ -28,6 +28,17 @@
             <input type="text" name="url" id="x-url" placeholder="URL"></input>
             <button type="button" id="x-submit">Submit</button>
         </article>
+
+        <article>
+            <h3>Manual</h3>
+            <input type="text" id="manual-id" placeholder="ID (required)">
+            <input type="text" id="manual-author-name" placeholder="Author Name">
+            <input type="text" id="manual-author-id" placeholder="Author ID">
+            <textarea id="manual-text" placeholder="Text"></textarea>
+            <input type="text" id="manual-created-at" placeholder="Created At (e.g. 2025-01-01T00:00:00.000Z)">
+            <input type="file" id="manual-images" accept="image/*" multiple>
+            <button type="button" id="manual-submit">Submit</button>
+        </article>
     </main>
 </body>
 
@@ -103,6 +114,37 @@
         }
         $XUrl.value = ""
         $XSubmitButton.disabled = false
+    })
+
+    const $ManualSubmitButton = $("#manual-submit")
+    $ManualSubmitButton.addEventListener("click", async (e) => {
+        e.preventDefault()
+        const $images = $("#manual-images")
+        if (!$("#manual-id").value.trim() || $images.files.length == 0) {
+            alert("ID and images are required")
+            return
+        }
+        const form = new FormData()
+        form.append("id", $("#manual-id").value)
+        form.append("author_name", $("#manual-author-name").value)
+        form.append("author_id", $("#manual-author-id").value)
+        form.append("text", $("#manual-text").value)
+        form.append("created_at", $("#manual-created-at").value)
+        for (const file of $images.files) {
+            form.append("images", file)
+        }
+        $ManualSubmitButton.disabled = true
+        try {
+            const response = await fetch("/add/manual", { method: "POST", body: form })
+            if (response.ok) {
+                location.href = "../"
+                return
+            }
+            alert("[Not OK] Failed to submit: " + String((await response.json()).error))
+        } catch (error) {
+            alert("[Exception] Failed to submit: " + String(error))
+        }
+        $ManualSubmitButton.disabled = false
     })
 </script>
 

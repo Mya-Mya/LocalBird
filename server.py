@@ -3,7 +3,7 @@ from flask import Flask, jsonify, send_file, abort, render_template, request
 import json
 from repository import *
 import postimporter
-from postimporter import Post, add_images_by_post
+from postimporter import Post, add_images_by_post, add_images_by_files
 from xscraping import extract_post_from_x_page
 
 app = Flask(__name__)
@@ -57,6 +57,25 @@ def post_add_from_x():
             return jsonify({"error": "No URL"}), 400
         post = extract_post_from_x_page(url)
         basenames = add_images_by_post(repo, post)
+        return jsonify({"basenames": basenames}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.post("/add/manual")
+def post_add_manual():
+    try:
+        form = request.form
+        meta = Meta(
+            id=(form.get("id") or "").strip() or None,
+            author_name=form.get("author_name") or None,
+            author_id=form.get("author_id") or None,
+            text=form.get("text") or None,
+            created_at=form.get("created_at") or None,
+        )
+        files = [f.stream for f in request.files.getlist("images") if f.filename]
+        repo.annotated_images_dir.mkdir(parents=True, exist_ok=True)
+        basenames = add_images_by_files(repo, meta, files)
         return jsonify({"basenames": basenames}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
